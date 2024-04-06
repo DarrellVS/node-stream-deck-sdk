@@ -1,9 +1,20 @@
 import { BaseController } from './Controllers/Base/BaseController';
 import { WebSocketServer } from 'ws';
-import { Events, LAYOUTS, type BaseEventParams, type ButtonEventParams, type Config, type FeedbackType, type InternalEmitterEvents, type LcdEventParams } from './Types/StreamDeckTypes';
+import {
+  Events,
+  LAYOUTS,
+  type BaseEventParams,
+  type ButtonEventParams,
+  type Config,
+  type FeedbackType,
+  type InternalEmitterEvents,
+  type LcdEventParams,
+  Layout,
+} from './Types/StreamDeckTypes';
 import { requiredFieldsPerFeedbackType } from './constants';
 import { validateRequiredFields } from './Helpers/FieldsHelpers';
 import { extractFields } from './Helpers/FieldsHelpers';
+import { getLayoutByName } from './Helpers/LayoutHelpers';
 
 export class StreamDeck extends BaseController<Events> {
   private wss: WebSocketServer;
@@ -14,7 +25,7 @@ export class StreamDeck extends BaseController<Events> {
   private dialLayouts = new Map<string, LAYOUTS>();
   private buttonDownTimeouts = new Map<string, NodeJS.Timeout>();
   private holdDuration = 500;
-  
+
   constructor(config: Config) {
     super();
 
@@ -26,27 +37,27 @@ export class StreamDeck extends BaseController<Events> {
 
     this.wss.on('connection', (ws) => {
       this.emit('pluginConnected');
-      
+
       ws.on('message', (message) => {
         const data = JSON.parse(message.toString());
-        if(data.action !== 'org.tynsoe.streamdeck.wsproxy.proxy') return;
+        if (data.action !== 'org.tynsoe.streamdeck.wsproxy.proxy') return;
 
         const { id } = data.payload.settings;
 
         const exisitingSocket = this.connectedSockets.get(data.context);
         this.connectedSockets.set(data.context, ws);
-        if(!exisitingSocket) {
+        if (!exisitingSocket) {
           this.idToContext.set(id, data.context);
         }
 
-        if(layoutConfig[id] && !this.dialLayouts.has(id)) {
+        if (layoutConfig[id] && !this.dialLayouts.has(id)) {
           this.setLayout(id, layoutConfig[id]);
         }
 
         switch (data.event) {
           case 'willAppear':
             this.emit('willAppear', id, {
-              data
+              data,
             });
             break;
 
@@ -57,30 +68,30 @@ export class StreamDeck extends BaseController<Events> {
 
           case 'dialRotate':
             this.internalEmitter.emit(
-              'dialRotate', 
-              id, 
-              data.payload.ticks, 
+              'dialRotate',
+              id,
+              data.payload.ticks,
               this.extractBaseDialFields(data.payload)
             );
             break;
 
           case 'dialPress':
             // Deduplicate dial press events as they are sent twice
-            if(this.downDials.has(id)) {
+            if (this.downDials.has(id)) {
               this.downDials.delete(id);
               break;
             }
             this.internalEmitter.emit(
-              'dialPress', 
-              id, 
+              'dialPress',
+              id,
               this.extractBaseDialFields(data.payload)
             );
             break;
 
           case 'dialDown':
             this.internalEmitter.emit(
-              'dialDown', 
-              id, 
+              'dialDown',
+              id,
               this.extractBaseDialFields(data.payload)
             );
             this.downDials.add(id);
@@ -88,8 +99,8 @@ export class StreamDeck extends BaseController<Events> {
 
           case 'dialUp':
             this.internalEmitter.emit(
-              'dialUp', 
-              id, 
+              'dialUp',
+              id,
               this.extractBaseDialFields(data.payload)
             );
             break;
@@ -100,34 +111,37 @@ export class StreamDeck extends BaseController<Events> {
               ...this.extractBaseDialFields(data.payload),
               tapPosition: {
                 x: data.payload.tapPos[0],
-                y: data.payload.tapPos[1]
-              }
+                y: data.payload.tapPos[1],
+              },
             });
 
-          case 'keyDown': 
+          case 'keyDown':
             this.internalEmitter.emit(
-              'keyDown', 
-              id, 
+              'keyDown',
+              id,
               this.extractBaseButtonFields(data.payload)
             );
-            this.buttonDownTimeouts.set(id, setTimeout(() => {
-              this.internalEmitter.emit(
-                'keyHold', 
-                id, 
-                this.extractBaseButtonFields(data.payload)
-              );
-            }, this.holdDuration));
+            this.buttonDownTimeouts.set(
+              id,
+              setTimeout(() => {
+                this.internalEmitter.emit(
+                  'keyHold',
+                  id,
+                  this.extractBaseButtonFields(data.payload)
+                );
+              }, this.holdDuration)
+            );
             break;
 
           case 'keyUp':
             this.internalEmitter.emit(
-              'keyUp', 
-              id, 
+              'keyUp',
+              id,
               this.extractBaseButtonFields(data.payload)
             );
             clearTimeout(this.buttonDownTimeouts.get(id));
             break;
-        
+
           default:
             break;
         }
@@ -136,22 +150,23 @@ export class StreamDeck extends BaseController<Events> {
   }
 
   private extractBaseDialFields(data: any) {
-    return extractFields(
-      data, 
-      ['coordinates', 'remoteServer']
-    );
+    return extractFields(data, ['coordinates', 'remoteServer']);
   }
 
   private extractBaseButtonFields(data: any) {
-    return extractFields(
-      data, 
-      ['coordinates', 'remoteServer', 'isInMultiAction']
-    );
+    return extractFields(data, [
+      'coordinates',
+      'remoteServer',
+      'isInMultiAction',
+    ]);
   }
 
-  public onDialRotate(id: string, callback: (value: number, params: BaseEventParams) => void) {
+  public onDialRotate(
+    id: string,
+    callback: (value: number, params: BaseEventParams) => void
+  ) {
     this.internalEmitter.on('dialRotate', (dialId, value, params) => {
-      if(dialId === id) {
+      if (dialId === id) {
         callback(value, params);
       }
     });
@@ -159,7 +174,7 @@ export class StreamDeck extends BaseController<Events> {
 
   public onDialPress(id: string, callback: (params: BaseEventParams) => void) {
     this.internalEmitter.on('dialPress', (dialId, params) => {
-      if(dialId === id) {
+      if (dialId === id) {
         callback(params);
       }
     });
@@ -167,7 +182,7 @@ export class StreamDeck extends BaseController<Events> {
 
   public onDialDown(id: string, callback: (params: BaseEventParams) => void) {
     this.internalEmitter.on('dialDown', (dialId, params) => {
-      if(dialId === id) {
+      if (dialId === id) {
         callback(params);
       }
     });
@@ -175,7 +190,7 @@ export class StreamDeck extends BaseController<Events> {
 
   public onDialUp(id: string, callback: (params: BaseEventParams) => void) {
     this.internalEmitter.on('dialUp', (dialId, params) => {
-      if(dialId === id) {
+      if (dialId === id) {
         callback(params);
       }
     });
@@ -183,7 +198,7 @@ export class StreamDeck extends BaseController<Events> {
 
   public onLcdTap(id: string, callback: (params: LcdEventParams) => void) {
     this.internalEmitter.on('touchTap', (lcdId, params) => {
-      if(lcdId === id) {
+      if (lcdId === id) {
         callback(params);
       }
     });
@@ -191,23 +206,29 @@ export class StreamDeck extends BaseController<Events> {
 
   public onLcdHold(id: string, callback: (params: LcdEventParams) => void) {
     this.internalEmitter.on('touchHold', (lcdId, params) => {
-      if(lcdId === id) {
+      if (lcdId === id) {
         callback(params);
       }
     });
   }
 
-  public onButtonDown(id: string, callback: (params: ButtonEventParams) => void) {
+  public onButtonDown(
+    id: string,
+    callback: (params: ButtonEventParams) => void
+  ) {
     this.internalEmitter.on('keyDown', (keyId, params) => {
-      if(keyId === id) {
+      if (keyId === id) {
         callback(params);
       }
     });
   }
 
-  public onButtonHold(id: string, callback: (params: ButtonEventParams) => void) {
+  public onButtonHold(
+    id: string,
+    callback: (params: ButtonEventParams) => void
+  ) {
     this.internalEmitter.on('keyHold', (keyId, params) => {
-      if(keyId === id) {
+      if (keyId === id) {
         callback(params);
       }
     });
@@ -215,7 +236,7 @@ export class StreamDeck extends BaseController<Events> {
 
   public onButtonUp(id: string, callback: (params: ButtonEventParams) => void) {
     this.internalEmitter.on('keyUp', (keyId, params) => {
-      if(keyId === id) {
+      if (keyId === id) {
         callback(params);
       }
     });
@@ -223,23 +244,24 @@ export class StreamDeck extends BaseController<Events> {
 
   private sendSocketMessage(id: string, message: any) {
     const context = this.idToContext.get(id);
-    if(!context) return false;
+    if (!context) return false;
 
     const socket = this.connectedSockets.get(context);
-    if(!socket) return false;
+    if (!socket) return false;
 
     socket.send(JSON.stringify(message));
   }
 
-  public setLayout(id: string, layout: LAYOUTS) {
-    this.dialLayouts.set(id, layout);
-    
+  public setLayout(id: string, layout: Layout) {
+    const parsedLayout = getLayoutByName(layout);
+    this.dialLayouts.set(id, parsedLayout);
+
     return this.sendSocketMessage(id, {
       event: 'setFeedbackLayout',
       context: this.idToContext.get(id),
       payload: {
-        layout,
-      }
+        layout: parsedLayout,
+      },
     });
   }
 
@@ -247,15 +269,15 @@ export class StreamDeck extends BaseController<Events> {
     const layout = this.dialLayouts.get(id);
 
     // Only validate required fields if a layout is set
-    if(layout) {
+    if (layout) {
       const requiredFields = requiredFieldsPerFeedbackType[layout];
-      validateRequiredFields(params, requiredFields)
+      validateRequiredFields(params, requiredFields);
     }
 
     return this.sendSocketMessage(id, {
       event: 'setFeedback',
       context: this.idToContext.get(id),
-      payload: params
+      payload: params,
     });
   }
 }

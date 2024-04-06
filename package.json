@@ -1,6 +1,6 @@
 {
   "name": "@darrellvs/node-stream-deck-sdk",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "An unofficial Node.JS SDK for the Elgato Stream Deck / Stream Deck +",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
