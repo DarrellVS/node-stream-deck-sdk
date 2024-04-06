@@ -64,17 +64,17 @@ export type BaseFeedbackType = {
 export type IconFeedbackType = BaseFeedbackType & {};
 
 export type ValueFeedbackType = BaseFeedbackType & {
-  value: string;
+  value: number | string;
 };
 
 export type IndicatorFeedbackType = BaseFeedbackType & {
-  value: number;
+  value: number | string;
   indicator: number;
   indicatorPostfix?: string;
 };
 
 export type GradientIndicatorFeedbackType = BaseFeedbackType & {
-  value: number;
+  value: number | string;
   indicator: number;
 };
 
