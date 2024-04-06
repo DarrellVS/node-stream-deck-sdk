@@ -1,0 +1,45 @@
+{
+  "name": "@darrellvs/node-stream-deck-sdk",
+  "version": "1.0.1",
+  "description": "An unofficial Node.JS SDK for the Elgato Stream Deck / Stream Deck +",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "example": "nodemon --exec ts-node examples/layout-settings.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup",
+    "pub": "npm version patch --force && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DarrellVS/node-stream-deck-sdk.git"
+  },
+  "keywords": [
+    "streamdeck",
+    "stream",
+    "deck",
+    "elgato"
+  ],
+  "author": "Darrell van Swinderen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DarrellVS/node-stream-deck-sdk/issues"
+  },
+  "homepage": "https://github.com/DarrellVS/node-stream-deck-sdk#readme",
+  "dependencies": {
+    "events": "^3.3.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.10",
+    "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.4"
+  }
+}
