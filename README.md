@@ -41,6 +41,10 @@ or (if you dare) pnpm
 - **Multiple device types supported**\
   This SDK supports both the Stream Deck and Stream Deck + devices.
 
+- **Set displayed data**\
+  Set the displayed data on the buttons and dials / lcds.\
+  Allows you to change the image, text, and other properties of the buttons and dials / lcds.
+
 - **TypeScript support**\
   This package is written in TypeScript and provides type definitions.
 
