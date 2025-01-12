@@ -12,10 +12,22 @@ const streamDeck = new StreamDeck({
 // Providing an id and a callback function, the callback will be called when the specified dial is rotated
 streamDeck.onDialRotate('dial_1', (ticks, params) => {
   console.log(`Dial 1 rotated ${ticks} ticks`);
+
+  const value = Math.random() * 100;
+  streamDeck.setDisplay('dial_1', {
+    value: value.toFixed(2),
+    indicator: value,
+  });
 });
 
 streamDeck.onDialRotate('dial_2', (ticks, params) => {
   console.log(`Dial 2 rotated ${ticks} ticks`);
+
+  const value = Math.random() * 100;
+  streamDeck.setDisplay('dial_2', {
+    value: value.toFixed(2),
+    indicator: value,
+  });
 });
 
 // You may also listen for press, down, and up events on the dials
